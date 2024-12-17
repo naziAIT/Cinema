@@ -1,0 +1,141 @@
+from flask import Flask, jsonify, request
+app = Flask(__name__)
+movies = [
+    {"title": "moana 2", "price": 670, "seats": [], "history": [], "sold": 0, "income": 0},
+    {"title": "Gladiator", "price": 600, "seats": [], "history": [], "sold": 0, "income": 0},
+    {"title": "Venom", "price": 550, "seats": [], "history": [], "sold": 0, "income": 0},
+    {"title": "Avg", "price": 600, "seats": [], "history": [], "sold": 0, "income": 0},
+
+]
+
+users_history={}
+
+users = {'asd':'asd'}
+
+@app.route('/add_movie')
+def add_movie():
+    movie = request.args.get('movie')
+    price = request.args.get('price')
+    movies.append({"title": movie, "price": int(price), "seats": [], "history": [], "sold": 0, "income": 0})
+
+@app.route('/remove_movie')
+def remove_movie():
+    movie = request.args.get('movie')
+    for i,j in enumerate(movies):
+        if j['title']==movie:
+            movies.pop(i)
+
+@app.route('/get_user')
+def get_user():
+    user = request.args.get('user')
+    if user in users.keys():
+        return jsonify(True)
+    else:
+        return jsonify(False)
+
+@app.route('/add_user')
+def add_user():
+    user = request.args.get('user')
+    password = request.args.get('password')
+    users[user]=password
+    users_history[user]=[]
+
+@app.route('/login')
+def login():
+    user = request.args.get('user')
+    password = request.args.get('password')
+    if users[user]==password:
+        return jsonify(True)
+    else:
+        return jsonify(False)
+
+@app.route('/get_movies')
+def get_movies():
+    return jsonify(movies)
+
+@app.route('/booking_seats')
+def booking_seats():
+    # Get the request parameters
+    movie_title = request.args.get('movie')
+    seats = request.args.get('seats').split(',')  # Convert the comma-separated seats into a list
+    user = request.args.get('user')
+    price = int(request.args.get('price'))
+    history_text = request.args.get('history')
+
+    # Find the movie by title
+    movie = next((m for m in movies if m['title'] == movie_title), None)
+
+    if not movie:
+        return jsonify({"error": "Movie not found!"}), 404
+
+    # Check if user exists
+    if user not in users:
+        return jsonify({"error": "User not found!"}), 404
+
+    # Update user history
+    if user not in users_history:
+        users_history[user] = []
+
+    users_history[user].append(history_text)
+
+    # Calculate the total price
+    total_price = len(seats) * price
+
+    # Update movie data (sold, income, and history)
+    movie["sold"] += len(seats)
+    movie["income"] += total_price
+    movie["history"].append(history_text)
+
+    # Update the seats to "booked" (not available)
+    for seat in seats:
+        if seat not in movie['seats']:  # If the seat isn't already marked as taken
+            movie['seats'].append(seat)  # Add the booked seat to the list
+
+    # Return success message
+    return jsonify({
+        "message": "Booking successful!",
+        "total_price": total_price,
+        "user_history": users_history[user],
+        "movie_seats": movie["seats"]
+    }), 200
+
+
+@app.route('/get_movie')
+def get_movie():
+    movie = request.args.get('movie')
+    for i in movies:
+        if i['title'] == movie:
+            return jsonify(i['seats'])
+
+@app.route('/get_history')
+def get_user_history():
+    return jsonify(users_history)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
